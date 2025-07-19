@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>বোটানি অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "Ulothrix শৈবালের ক্লোরোপ্লাস্টের আকৃতি কীরূপ?",
+          options: {
+            a: "গার্ডেলাকৃতির",
+            b: "গোলাকার",
+            c: "পিপাকৃতির",
+            d: "অর্ধবৃত্তাকার",
+          },
+          correct: "a",
+          explanation:
+            "Ulothrix শৈবালের ক্লোরোপ্লাস্ট গার্ডেলাকৃতির বা কোমরবন্ধনী আকৃতির হয়ে থাকে। এটি কোষের প্রাচীরের সাথে পেঁচানো অবস্থায় থাকে এবং পুরো কোষটিকে বেষ্টন করে না।",
+        },
+        {
+          id: 2,
+          question: "Ulothrix এর অযৌন জুস্পোর কত ফ্ল্যাজেলা বিশিষ্ট?",
+          options: {
+            a: "2-8",
+            b: "3-5",
+            c: "8-16",
+            d: "8-10",
+          },
+          correct: "a",
+          explanation:
+            "Ulothrix এর অযৌন জুস্পোর সাধারণত 2-8টি ফ্ল্যাজেলা বিশিষ্ট হয়। এই ফ্ল্যাজেলাগুলো এদের চলাচল করতে সাহায্য করে এবং নতুন স্থানে গিয়ে অঙ্কুরিত হতে পারে।",
+        },
+        {
+          id: 3,
+          question: "হ্যাপ্নোটিক টাইপ জীবনচক্র ঘটে কোন শৈবালে?",
+          options: {
+            a: "Ulothrix",
+            b: "Urospora",
+            c: "Sargassum",
+            d: "Coleochaeta",
+          },
+          correct: "a",
+          explanation:
+            "Ulothrix শৈবালে হ্যাপ্নোটিক টাইপ জীবনচক্র দেখা যায়। এই জীবনচক্রে জাইগোট হলো একমাত্র ডিপ্লয়েড দশা এবং এটি মায়োসিসের মাধ্যমে হ্যাপ্লয়েড স্পোর তৈরি করে যা নতুন হ্যাপ্লয়েড ফিলামেন্টের জন্ম দেয়।",
+        },
+        {
+          id: 5,
+          question: "ইউলোথ্রিক্স-এ মায়োসিস ঘটে-",
+          options: {
+            a: "ফিলামেন্ট কোষে",
+            b: "গ্যামিটে",
+            c: "হোল্ডফাস্টে",
+            d: "জাইগোটে",
+          },
+          correct: "d",
+          explanation:
+            "ইউলোথ্রিক্স-এ মায়োসিস জাইগোটে ঘটে। জাইগোট হলো ডিপ্লয়েড দশা এবং এটি অঙ্কুরিত হওয়ার আগে মায়োসিস প্রক্রিয়ার মাধ্যমে হ্যাপ্লয়েড স্পোর তৈরি করে। এই স্পোরগুলো নতুন হ্যাপ্লয়েড ফিলামেন্টের জন্ম দেয়।",
+        },
+        {
+          id: 6,
+          question:
+            "Ulothrix এর যৌন জননে কোষের প্রোটোপ্লাস্ট কতগুলো খণ্ডে বিভক্ত হয়?",
+          options: {
+            a: "৮-১০টি",
+            b: "১৬-৬৪টি",
+            c: "৭০-৮০টি",
+            d: "১০০-১৬০টি",
+          },
+          correct: "b",
+          explanation:
+            "Ulothrix এর যৌন জননে, একটি কোষের প্রোটোপ্লাস্ট ১৬-৬৪টি ছোট ছোট ফ্ল্যাজেলাযুক্ত গ্যামেটে বিভক্ত হয়। এই গ্যামেটগুলো আইসোগ্যামাস অর্থাৎ আকারে ও আকৃতিতে একই রকম এবং এরা একত্রিত হয়ে জাইগোট গঠন করে।",
+        },
+        {
+          id: 7,
+          question: "Ulothrix এর জাইগোট কতটি ফ্ল্যাজেলা নিয়ে গঠিত?",
+          options: {
+            a: "দুটি",
+            b: "চারটি",
+            c: "আটটি",
+            d: "ষোলটি",
+          },
+          correct: "b",
+          explanation:
+            "Ulothrix এর দুটি ফ্ল্যাজেলাযুক্ত গ্যামেটের মিলনের ফলে সৃষ্ট জাইগোট চারটি ফ্ল্যাজেলা নিয়ে গঠিত হয়। এই ফ্ল্যাজেলাগুলো জাইগোটকে কিছু সময়ের জন্য চলাচল করতে সাহায্য করে।",
+        },
+        {
+          id: 8,
+          question:
+            "একটি গ্যামিট থেকে পূর্ণাঙ্গ Ulothrix তৈরির প্রক্রিয়া কোনটি?",
+          options: {
+            a: "অ্যাপোস্পোরি",
+            b: "পার্থেনোজেনেসিস",
+            c: "অ্যাপোগ্যামি",
+            d: "ডিপ্লয়েড পার্থেনোজেনেসিস",
+          },
+          correct: "b",
+          explanation:
+            "একটি গ্যামিট নিষেক ছাড়াই সরাসরি পূর্ণাঙ্গ Ulothrix উদ্ভিদে পরিণত হওয়ার প্রক্রিয়াকে পার্থেনোজেনেসিস বলে। অ্যাপোস্পোরি হলো স্পোর ছাড়াই ডিপ্লয়েড থ্যালাস থেকে হ্যাপ্লয়েড গ্যামেটোফাইটের সৃষ্টি, অ্যাপোগ্যামি হলো গ্যামেটের মিলন ছাড়াই গ্যামেটোফাইট থেকে স্পোরোফাইটের সৃষ্টি এবং ডিপ্লয়েড পার্থেনোজেনেসিসে অনিষিক্ত ডিম্বাণু ডিপ্লয়েড ভ্রূণ তৈরি করে।",
+        },
+        {
+          id: 9,
+          question: "আংটি আকৃতির ক্লোরোপ্লাস্ট পাওয়া যায় নিচের কোনটিতে?",
+          options: {
+            a: "Spirogyra",
+            b: "Oedogonium",
+            c: "Volvox",
+            d: "Ulothrix",
+          },
+          correct: "d",
+          explanation:
+            "Ulothrix শৈবালে আংটি আকৃতির বা গার্ডেলাকৃতির ক্লোরোপ্লাস্ট পাওয়া যায়। স্পাইরোগাইরাতে সর্পিলাকার, Oedogonium এ জালিকা আকৃতির এবং Volvox এ পেয়ালাকৃতির ক্লোরোপ্লাস্ট দেখা যায়।",
+        },
+        {
+          id: 10,
+          question: "নিচের কোনটি সঠিক?",
+          options: {
+            a: "Chlorella হলো এককোষী, সচল শৈবাল",
+            b: "Ulothrix এর জাইগোট ৪-ফ্ল্যাজেলাবিশিষ্ট",
+            c: "Ulothrix এর ম্যাক্রোজুস্পোরে কতটি ফ্ল্যাজেলা থাকে",
+            d: "Agaricus আলুর বিলম্বিত ধ্বসা রোগ সৃষ্টি করে",
+          },
+          correct: "b",
+          explanation:
+            "Ulothrix এর জাইগোট দুটি গ্যামেটের মিলনের ফলে গঠিত হয় এবং এটি চারটি ফ্ল্যাজেলাবিশিষ্ট। Chlorella একককোষী হলেও এটি নিশ্চল। Ulothrix এ ম্যাক্রোজুস্পোর এবং মাইক্রোজুস্পোর উভয়ই ২-৮টি ফ্ল্যাজেলা বিশিষ্ট হতে পারে, তবে নির্দিষ্ট সংখ্যা উল্লেখ করা নেই। Agaricus একটি ভোজ্য ছত্রাক, Phytophthora infestans আলুর বিলম্বিত ধ্বসা রোগ সৃষ্টি করে।",
+        },
+        {
+          id: 11,
+          question: "কোন উদ্ভিদের ক্লোরোপ্লাস্টে পাইরিনয়েড থাকে?",
+          options: {
+            a: "Nostoc",
+            b: "Ulothrix",
+            c: "Riccia",
+            d: "Cycas",
+          },
+          correct: "b",
+          explanation:
+            "Ulothrix এর ক্লোরোপ্লাস্টে পাইরিনয়েড নামক প্রোটিন সমৃদ্ধ গঠন দেখা যায়। পাইরিনয়েড স্টার্চ সংশ্লেষণে সাহায্য করে। Nostoc একটি সায়ানোব্যাকটেরিয়া, Riccia একটি ব্রায়োফাইট এবং Cycas একটি জিমনোস্পার্ম।",
+        },
+        {
+          id: 12,
+          question: "Ulothrix sp এ কোন প্রকার গ্যামিটের মিল?",
+          options: {
+            a: "আইসোগ্যামাস",
+            b: "অ্যানাইসোগ্যামাস",
+            c: "উগ্যামাস",
+            d: "গ্যামিটোজেনেসিস",
+          },
+          correct: "a",
+          explanation:
+            "Ulothrix sp এ আইসোগ্যামাস প্রকারের গ্যামিটের মিলন দেখা যায়। এর অর্থ হলো যৌন জননের সময় দুটি গ্যামেট আকারে ও আকৃতিতে একই রকম হয় এবং উভয়টিতেই ফ্ল্যাজেলা থাকে। অ্যানাইসোগ্যামাসে গ্যামেট আকারে ভিন্ন হয় এবং উগ্যামাসে একটি বড় নিশ্চল স্ত্রী গ্যামেট ও একটি ছোট সচল পুরুষ গ্যামেট মিলিত হয়। গ্যামিটোজেনেসিস হলো গ্যামেট তৈরির প্রক্রিয়া।",
+        },
+        {
+          id: 13,
+          question: "ফল, রুটি এবং দোর উপরে কোন ছত্রাক জন্মায়?",
+          options: {
+            a: "মুগুর ছত্রাক",
+            b: "ডিম্ব ছত্রাক",
+            c: "থলি ছত্রাক",
+            d: "জাইগোট ছত্রাক",
+          },
+          correct: "d",
+          explanation:
+            "ফল, রুটি এবং দোর উপরে সাধারণত জাইগোট ছত্রাক (Zygomycota) যেমন রাইজোলাস (Rhizopus) জন্মায়। এরা দ্রুত বর্ধনশীল এবং পচা জৈব পদার্থের উপর সহজেই বিস্তার লাভ করে। মুগুর ছত্রাক (Basidiomycota) এর মধ্যে মাশরুম উল্লেখযোগ্য, থলি ছত্রাক (Ascomycota) এর মধ্যে ঈস্ট ও পেনিসিলিয়াম উল্লেখযোগ্য এবং ডিম্ব ছত্রাক (Oomycota) পূর্বে ছত্রাকের অন্তর্ভুক্ত ছিল তবে বর্তমানে এটি ক্রোমিস্তা রাজ্যের সদস্য।",
+        },
+        {
+          id: 14,
+          question: "একশত গ্রাম মাশরুমে কত গ্রাম শর্করা থাকে?",
+          options: {
+            a: "8-9 grams",
+            b: "2-4 grams",
+            c: "5-6 grams",
+            d: "4-5 grams",
+          },
+          correct: "b",
+          explanation:
+            "একশত গ্রাম মাশরুমে সাধারণত ২-৪ গ্রাম শর্করা থাকে। মাশরুম কম শর্করাযুক্ত খাবার হিসেবে পরিচিত এবং এটি প্রোটিন, ভিটামিন ও খনিজ পদার্থের একটি ভালো উৎস।",
+        },
+        {
+          id: 15,
+          question: "ছত্রাকের বৈশিষ্ট্য কোনটি?",
+          options: {
+            a: "বৃদ্ধি ও পুষ্টিতে আলোর প্রয়োজন হয়",
+            b: "দেহ মূল, কাণ্ড ও পাতায় বিভক্ত",
+            c: "দেহে সঞ্চিত খাদ্য থাকে না",
+            d: "যৌন ও অযৌন উপায়ে বংশবৃদ্ধি করে",
+          },
+          correct: "d",
+          explanation:
+            "ছত্রাকের একটি গুরুত্বপূর্ণ বৈশিষ্ট্য হলো এরা যৌন ও অযৌন উভয় উপায়ে বংশবৃদ্ধি করতে পারে। কিছু ছত্রাক স্পোর তৈরির মাধ্যমে অযৌন জনন করে, আবার কিছু ছত্রাক গ্যামেটের মিলনের মাধ্যমে যৌন জনন সম্পন্ন করে। ছত্রাকের বৃদ্ধি ও পুষ্টির জন্য আলোর প্রয়োজন হয় না, এদের দেহ মূল, কাণ্ড ও পাতায় বিভক্ত নয় এবং এদের দেহে গ্লাইকোজেন ও তেলবিন্দুরূপে সঞ্চিত খাদ্য থাকে।",
+        },
+        {
+          id: 16,
+          question: "ছত্রাক কোষ প্রাচীরের প্রধান উপাদান কোনটি?",
+          options: {
+            a: "Chitin",
+            b: "Cellulose",
+            c: "Glycogen",
+            d: "Starch",
+          },
+          correct: "a",
+          explanation:
+            "ছত্রাক কোষ প্রাচীরের প্রধান উপাদান হলো কাইটিন নামক একটি পলিস্যাকারাইড। এটি পোকামাকড়ের বহিঃকঙ্কাল এবং অন্যান্য জীবের মধ্যেও পাওয়া যায়। সেলুলোজ উদ্ভিদের কোষ প্রাচীরের প্রধান উপাদান, গ্লাইকোজেন ছত্রাকের সঞ্চিত খাদ্য এবং স্টার্চ উদ্ভিদের সঞ্চিত খাদ্য।",
+        },
+        {
+          id: 17,
+          question:
+            "কোন ছত্রাকে মুগুর আকৃতির আণুবীক্ষণিক জনন অঙ্গ ব্যাসিডিয়াম থাকে?",
+          options: {
+            a: "Candida",
+            b: "Rhizopus",
+            c: "Agaricus",
+            d: "Mucor",
+          },
+          correct: "c",
+          explanation:
+            "অ্যাগারিকাস (Agaricus) নামক ছত্রাকে মুগুর আকৃতির আণুবীক্ষণিক জনন অঙ্গ ব্যাসিডিয়াম থাকে। ব্যাসিডিয়ামের উপরে ব্যাসিডিওস্পোর নামক জনন রেণু তৈরি হয়। অ্যাগারিকাস হলো ব্যাসিডিওমাইকোটা বিভাগের সদস্য, যার মধ্যে পরিচিত মাশরুম অন্তর্ভুক্ত। Candida একটি অ্যাসকোমাইসিটিস (yeast), Rhizopus একটি জাইগোমাইসিটিস এবং Mucor ও জাইগোমাইসিটিস।",
+        },
+        {
+          id: 18,
+          question: "ছত্রাকের জট পাকানোর অবস্থাকে কী বলে?",
+          options: {
+            a: "হাইফা",
+            b: "মাইসেলিয়াম",
+            c: "রাইজয়েড",
+            d: "হস্টোরিয়াম",
+          },
+          correct: "b",
+          explanation:
+            "ছত্রাকের সরু সুতার মতো গঠনকে হাইফা বলে এবং এই হাইফাগুলো যখন জট পাকিয়ে একটি জালিকার মতো গঠন তৈরি করে তখন তাকে মাইসেলিয়াম বলে। রাইজয়েড হলো কিছু নিম্নশ্রেণীর উদ্ভিদের মূলের মতো গঠন যা মাটি আঁকড়ে ধরে এবং হস্টোরিয়াম হলো পরজীবী ছত্রাকের খাদ্য শোষণকারী অঙ্গ।",
+        },
+        {
+          id: 19,
+          question: "বর্ণাধার নেই, এমন উদ্ভিদ হলো-",
+          options: {
+            a: "ছত্রাক",
+            b: "ব্যাকটেরিয়া",
+            c: "শৈবাল",
+            d: "লাইকেন",
+          },
+          correct: "a",
+          explanation:
+            "ছত্রাকের দেহে কোনো বর্ণাধার (যেমন ক্লোরোফিল) থাকে না, তাই এরা সালোকসংশ্লেষণ করতে পারে না এবং পরভোজী বা মৃতজীবী হিসেবে পুষ্টি গ্রহণ করে। ব্যাকটেরিয়া, শৈবাল এবং লাইকেনের (শৈবাল ও ছত্রাকের মিথোজীবী গঠন) দেহে বর্ণাধার থাকতে পারে।",
+        },
+        {
+          id: 20,
+          question: "ছত্রাকের সঞ্চিত খাদ্য-",
+          options: {
+            a: "সেলুলোজ",
+            b: "প্রোটিন",
+            c: "গ্লাইকোজেন ও তৈল বিন্দু",
+            d: "চিকেন ফ্রাই",
+          },
+          correct: "c",
+          explanation:
+            "ছত্রাকের সঞ্চিত খাদ্য হলো গ্লাইকোজেন এবং তৈল বিন্দু। প্রয়োজনের সময় ছত্রাক এই সঞ্চিত খাদ্য ব্যবহার করে। সেলুলোজ উদ্ভিদের কোষ প্রাচীরের উপাদান এবং প্রোটিন জীবদেহের গঠনগত ও কার্যগত উপাদান।",
+        },
+        {
+          id: 21,
+          question: "ছত্রাকের সঞ্চিত খাবার কী?",
+          options: {
+            a: "স্টার্চ",
+            b: "চর্বি ও প্রোটিন",
+            c: "গ্লাইকোজেন",
+            d: "লিপিড",
+          },
+          correct: "c",
+          explanation:
+            "ছত্রাকের প্রধান সঞ্চিত খাবার হলো গ্লাইকোজেন। এটি একটি জটিল শর্করা যা প্রয়োজনে ভেঙে গ্লুকোজ সরবরাহ করে। স্টার্চ উদ্ভিদের সঞ্চিত খাবার, চর্বি ও প্রোটিন অন্যান্য জীবের সঞ্চিত খাবার হতে পারে তবে ছত্রাকের প্রধান সঞ্চিত খাবার গ্লাইকোজেন। লিপিডও কিছু ছত্রাকে সঞ্চিত থাকতে পারে তবে প্রধানত গ্লাইকোজেনই সঞ্চিত থাকে।",
+        },
+        {
+          id: 22,
+          question: "কোন ছত্রাকে Coenocytic মাইসেলিয়াম থাকে?",
+          options: {
+            a: "Penicillium",
+            b: "Agaricus",
+            c: "Aspergillus",
+            d: "Mucor",
+          },
+          correct: "d",
+          explanation:
+            "Mucor নামক ছত্রাকে Coenocytic মাইসেলিয়াম দেখা যায়। এর অর্থ হলো এদের হাইফাগুলোতে কোনো প্রস্থপ্রাচীর থাকে না এবং সাইটোপ্লাজমে অসংখ্য নিউক্লিয়াস মুক্তভাবে ছড়িয়ে থাকে। Penicillium ও Aspergillus এর হাইফাতে সেপ্টা বা প্রস্থপ্রাচীর থাকে এবং Agaricus এর মাইসেলিয়ামও সেপ্টেট।",
+        },
+        {
+          id: 23,
+          question: "ছত্রাকের কোষ প্রাচীরের প্রধান উপাদান কোনটি?",
+          options: {
+            a: "কাইটিন",
+            b: "সেলুলোজ",
+            c: "স্টার্চ",
+            d: "গ্লাইকোজেন",
+          },
+          correct: "a",
+          explanation:
+            "ছত্রাকের কোষ প্রাচীরের প্রধান উপাদান হলো কাইটিন নামক একটি শক্ত পলিস্যাকারাইড। এটি ছত্রাককে দৃঢ়তা প্রদান করে। সেলুলোজ উদ্ভিদের কোষ প্রাচীরে, স্টার্চ উদ্ভিদের সঞ্চিত খাদ্যে এবং গ্লাইকোজেন ছত্রাকের সঞ্চিত খাদ্যে পাওয়া যায়।",
+        },
+        {
+          id: 24,
+          question: "ছত্রাকের সাধারণ বৈশিষ্ট্য কোনটি?",
+          options: {
+            a: "আলোর উপর নির্ভরশীল",
+            b: "জননাঙ্গ বহুকোষী",
+            c: "পরিবহন তন্ত্র",
+            d: "কোষপ্রাচীর কাইটিন নির্মিত",
+          },
+          correct: "d",
+          explanation:
+            "ছত্রাকের একটি সাধারণ বৈশিষ্ট্য হলো এদের কোষপ্রাচীর কাইটিন নামক উপাদান দ্বারা গঠিত। এরা আলোর উপর নির্ভরশীল নয়, এদের জননাঙ্গ একককোষী বা বহুকোষী হতে পারে এবং এদের কোনো উন্নত পরিবহন তন্ত্র নেই।",
+        },
+        {
+          id: 25,
+          question: "কোন ছত্রাকটি জলজ?",
+          options: {
+            a: "Saprolegnia",
+            b: "Rhizopus",
+            c: "Aspergillus",
+            d: "Cercospora",
+          },
+          correct: "a",
+          explanation:
+            "Saprolegnia হলো একটি জলজ ছত্রাক যা সাধারণত মিষ্টি পানিতে বা স্যাঁতসেঁতে মাটিতে পাওয়া যায়। এটি মাছ এবং অন্যান্য জলজ জীবের রোগ সৃষ্টি করতে পারে। Rhizopus সাধারণত রুটি ও ফলে জন্মায়, Aspergillus মাটিতে ও বায়ুতে পাওয়া যায় এবং Cercospora উদ্ভিদের পরজীবী।",
+        },
+        {
+          id: 26,
+          question: "কোন ছত্রাক অন্ধকারে আলোক বিচ্ছুরণ ঘটায়?",
+          options: {
+            a: "Noctiluca",
+            b: "Rhizopus",
+            c: "Mucor",
+            d: "Agaricus",
+          },
+          correct: "d",
+          explanation:
+            "অ্যাগারিকাস (Agaricus) গণের কিছু সদস্য অন্ধকারে আলোক বিচ্ছুরণ ঘটাতে পারে, যদিও এটি খুব সাধারণ বৈশিষ্ট্য নয়। Noctiluca একটি ডাইনোফ্লাজেলেট যা আলোক বিচ্ছুরণ ঘটায়, Rhizopus ও Mucor এই বৈশিষ্ট্য দেখায় না।",
+        },
+        {
+          id: 27,
+          question:
+            "পরজীবী ছত্রাক যে বিশেষ হাইফার মাধ্যমে পোষক দেহ থেকে খাদ্য শোষণ করে তাকে বলে?",
+          options: {
+            a: "রাইজোম",
+            b: "মাইসেলিয়াম",
+            c: "হস্টোরিয়াম",
+            d: "মাইকোরাইজা",
+          },
+          correct: "c",
+          explanation:
+            "পরজীবী ছত্রাক পোষক দেহ থেকে খাদ্য শোষণের জন্য যে বিশেষ হাইফা গঠন করে তাকে হস্টোরিয়াম বলে। রাইজোম হলো কিছু উদ্ভিদের ভূগর্ভস্থ কাণ্ড, মাইসেলিয়াম হলো ছত্রাকের হাইফার জট এবং মাইকোরাইজা হলো ছত্রাক ও উদ্ভিদের মূলের মিথোজীবী সম্পর্ক।",
+        },
+        {
+          id: 28,
+          question:
+            "প্রন্থপ্রাচীরবিহীন বহুনিউক্লিয়াসযুক্ত ছত্রাকের মাইসেলিয়ামকে কী বলে?",
+          options: {
+            a: "হাইফা",
+            b: "রাইজয়েড",
+            c: "ডোম",
+            d: "সিনোসাইট",
+          },
+          correct: "d",
+          explanation:
+            "প্রস্থপ্রাচীরবিহীন বহুনিউক্লিয়াসযুক্ত ছত্রাকের মাইসেলিয়ামকে সিনোসাইট বলে। এই ধরনের মাইসেলিয়ামে সাইটোপ্লাজম অবিচ্ছিন্ন থাকে এবং অসংখ্য নিউক্লিয়াস মুক্তভাবে ছড়িয়ে থাকে। হাইফা হলো একক সূত্রাকার গঠন, রাইজয়েড মূলের মতো কাজ করে এবং ডোম কোনো নির্দিষ্ট ছত্রাক গঠন নয়।",
+        },
+        {
+          id: 29,
+          question: "নিচের কোনটি অয়ডিয়া সৃষ্টির মাধ্যমে অযৌন জনন ঘটায়?",
+          options: {
+            a: "Rhizopus",
+            b: "Aspergillus",
+            c: "Penicillium",
+            d: "Saprolegnia",
+          },
+          correct: "a",
+          explanation:
+            "রাইজোলাস (Rhizopus) অয়ডিয়া সৃষ্টির মাধ্যমে অযৌন জনন ঘটাতে পারে। অয়ডিয়া হলো হাইফার খণ্ড যা বিভক্ত হয়ে নতুন জীব হিসেবে বৃদ্ধি পায়। Aspergillus কনিডিয়া, Penicillium কনিডিয়া এবং Saprolegnia জুওস্পোরের মাধ্যমে অযৌন জনন করে।",
+        },
+        {
+          id: 30,
+          question: "নিচের কোনটি ছত্রাকের যৌন জনন প্রক্রিয়া?",
+          options: {
+            a: "কনিডিয়া সৃষ্টি",
+            b: "জুওস্পোর সৃষ্টি",
+            c: "কোরকোদগম",
+            d: "প্লাজমোগ্যামি",
+          },
+          correct: "d",
+          explanation:
+            "প্লাজমোগ্যামি হলো ছত্রাকের যৌন জনন প্রক্রিয়ার একটি ধাপ যেখানে দুটি ভিন্ন গ্যামেটের প্রোটোপ্লাজমের মিলন ঘটে, কিন্তু নিউক্লিয়াসের মিলন ঘটে না। কনিডিয়া সৃষ্টি, জুওস্পোর সৃষ্টি ও কোরকোদগম অযৌন জনন প্রক্রিয়া।",
+        },
+        {
+          id: 31,
+          question:
+            "ছত্রাকের অণুসূত্রগুলো পরস্পরের সাথে জড়াজড়ি অবস্থায় যে ছত্রাকদেহ গঠন করে তাকে কী বলে?",
+          options: {
+            a: "হোল্ডফাস্ট",
+            b: "মাইসেলিয়াম",
+            c: "হাইফি",
+            d: "সিনোসাইট",
+          },
+          correct: "b",
+          explanation:
+            "ছত্রাকের অণুসূত্রগুলো হলো হাইফি এবং এই হাইফিগুলো পরস্পরের সাথে জড়াজড়ি অবস্থায় যে জালিকার মতো ছত্রাকদেহ গঠন করে তাকে মাইসেলিয়াম বলে। হোল্ডফাস্ট কিছু শৈবালের ভিত্তি স্থাপনকারী অঙ্গ, সিনোসাইট হলো প্রস্থপ্রাচীরবিহীন বহুনিউক্লিয়াসযুক্ত হাইফা।",
+        },
+        {
+          id: 32,
+          question:
+            "বাডিং এর সময় ছত্রাকের মাতৃকোষের নিউক্লিয়াসটি কোন প্রক্রিয়ায় বিভক্ত হয়?",
+          options: {
+            a: "মায়োসিস",
+            b: "দ্বিবিভাজন",
+            c: "অ্যামাইটোসিস",
+            d: "মাইটোসিস",
+          },
+          correct: "d",
+          explanation:
+            "বাডিং হলো এক প্রকার অযৌন জনন প্রক্রিয়া যা ঈস্টের মতো একককোষী ছত্রাকে দেখা যায়। এই সময় মাতৃকোষের নিউক্লিয়াসটি মাইটোসিস প্রক্রিয়ায় বিভক্ত হয় এবং একটি নিউক্লিয়াস নবগঠিত বাডের মধ্যে স্থানান্তরিত হয়। মায়োসিস যৌন জননের সময় ঘটে, দ্বিবিভাজন ব্যাকটেরিয়ার জনন প্রক্রিয়া এবং অ্যামাইটোসিস নিউক্লিয়াসের সরাসরি বিভাজন, যা ছত্রাকে খুব কম দেখা যায়।",
+        },
+        {
+          id: 33,
+          question: "কীসের সাহায্যে ছত্রাকের উম্পোরের অঙ্কুরোদগম ঘটে?",
+          options: {
+            a: "প্রোটোপ্লাস্ট",
+            b: "জার্মনালি",
+            c: "কনিডিওফোর",
+            d: "চলরেণু",
+          },
+          correct: "b",
+          explanation:
+            "ছত্রাকের উম্পোর (spore) অঙ্কুরিত হওয়ার সময় একটি নল আকৃতির গঠন তৈরি করে, যাকে জার্মনালি বলা হয়। এই জার্মনালি পরবর্তীতে হাইফা এবং মাইসেলিয়ামের জন্ম দেয়। প্রোটোপ্লাস্ট হলো কোষের ভেতরের সজীব অংশ, কনিডিওফোর হলো কনিডিয়া বহনকারী শাখা এবং চলরেণু হলো ফ্ল্যাজেলাযুক্ত স্পোর যা কিছু নিম্নশ্রেণীর ছত্রাকে দেখা যায়।",
+        },
+        {
+          id: 34,
+          question: "বায়ুবাহিত ছত্রাকের রেণু কী সৃষ্টি করে?",
+          options: {
+            a: "অ্যালার্জি",
+            b: "দাঁদ",
+            c: "শ্বাসনালির প্রদাহ",
+            d: "কিডনির রোগ",
+          },
+          correct: "a",
+          explanation:
+            "বায়ুতে ভেসে বেড়ানো ছত্রাকের রেণু অনেক মানুষের মধ্যে অ্যালার্জির প্রতিক্রিয়া সৃষ্টি করতে পারে। এর ফলে হাঁচি, কাশি, শ্বাসকষ্ট, চোখ চুলকানো ইত্যাদি লক্ষণ দেখা দিতে পারে। দাঁদ ত্বকের একটি ছত্রাকজনিত রোগ, শ্বাসনালির প্রদাহ বিভিন্ন কারণে হতে পারে এবং কিডনির রোগ ছত্রাকের কারণে সরাসরি নাও হতে পারে।",
+        },
+        {
+          id: 35,
+          question: "ছত্রাকের কনিডিয়ার সঞ্চিত বস্তু কী?",
+          options: {
+            a: "সেলুলোজ",
+            b: "গ্লাইকোজেন",
+            c: "তেলবিন্দু",
+            d: "স্টার্চ",
+          },
+          correct: "c",
+          explanation:
+            "ছত্রাকের কনিডিয়ার সঞ্চিত বস্তু হলো তেলবিন্দু (oil droplets)। কনিডিয়া হলো ছত্রাকের অযৌন জনন রেণু যা কনিডিওফোরে উৎপন্ন হয়। সেলুলোজ উদ্ভিদের কোষ প্রাচীরের উপাদান, গ্লাইকোজেন ছত্রাকের প্রধান সঞ্চিত খাদ্য এবং স্টার্চ উদ্ভিদের সঞ্চিত খাদ্য।",
+        },
+        {
+          id: 36,
+          question: "ছত্রাকের যৌন জননের ধাপ কয়টি?",
+          options: {
+            a: "2",
+            b: "3",
+            c: "8",
+            d: "5",
+          },
+          correct: "b",
+          explanation:
+            "ছত্রাকের যৌন জনন প্রধানত তিনটি ধাপে সম্পন্ন হয়: প্লাজমোগ্যামি (protoplast fusion), ক্যারিওগ্যামি (nuclear fusion) এবং মায়োসিস (meiosis)। কিছু ক্ষেত্রে ডাইক্যারিওফেজ নামক একটি মধ্যবর্তী দশাও দেখা যায় যেখানে দুটি নিউক্লিয়াস একটি কোষে সহাবস্থান করে কিন্তু মিলিত হয় না।",
+        },
+        {
+          id: 37,
+          question: "কোন উদ্ভিদের সঞ্চিত খাদ্য গ্লাইকোজেন?",
+          options: {
+            a: "মস",
+            b: "ফার্ন",
+            c: "শৈবাল",
+            d: "ছত্রাক",
+          },
+          correct: "d",
+          explanation:
+            "ছত্রাকের সঞ্চিত খাদ্য হলো গ্লাইকোজেন। মস, ফার্ন ও শৈবালের সঞ্চিত খাদ্য সাধারণত স্টার্চ বা অন্য ধরনের শর্করা হয়ে থাকে। গ্লাইকোজেন প্রাণীদের মধ্যেও সঞ্চিত খাদ্য হিসেবে থাকে।",
+        },
+        {
+          id: 38,
+          question: "আলুর বিলম্বিত ধ্বসা রোগে কোনটি ব্যবহার করা হয়?",
+          options: {
+            a: "১% বোর্দো মিশ্রণ",
+            b: "১% বার্গেন্ডি মিশ্রণ",
+            c: "৩% সোডিয়াম",
+            d: "৩% ম্যাগনেসিয়াম",
+          },
+          correct: "a",
+          explanation:
+            "আলুর বিলম্বিত ধ্বসা রোগ (late blight) একটি মারাত্মক ছত্রাকজনিত রোগ এবং এর নিয়ন্ত্রণে ১% বোর্দো মিশ্রণ ব্যবহার করা হয়। বোর্দো মিশ্রণ হলো কপার সালফেট ও চুন এর মিশ্রণ যা ছত্রাকনাশক হিসেবে কাজ করে। বার্গেন্ডি মিশ্রণও কoper সালফেট ও সোডিয়াম কার্বনেটের মিশ্রণ যা ছত্রাকনাশক হিসেবে ব্যবহৃত হয়, তবে আলুর বিলম্বিত ধ্বসার জন্য বোর্দো মিশ্রণ বেশি প্রচলিত। সোডিয়াম বা ম্যাগনেসিয়াম এই রোগের নিয়ন্ত্রণে ব্যবহৃত হয় না।",
+        },
+        {
+          id: 39,
+          question: "পুষ্টির উপর ভিত্তি করে অধিক সাদৃশ্যপূর্ণ জোড় কোনটি?",
+          options: {
+            a: "ছত্রাক ও ব্যাকটেরিয়া",
+            b: "ভাইরাস ও ব্যাকটেরিয়া",
+            c: "শৈবাল ও ব্যাকটেরিয়া",
+            d: "শৈবাল ও ছত্রাক",
+          },
+          correct: "d",
+          explanation:
+            "পুষ্টির উপর ভিত্তি করে শৈবাল ও ছত্রাকের মধ্যে অধিক সাদৃশ্য দেখা যায়। শৈবাল হলো স্বভোজী (autotrophic), অর্থাৎ এরা সালোকসংশ্লেষণের মাধ্যমে নিজেদের খাদ্য তৈরি করতে পারে। অন্যদিকে, ছত্রাক হলো পরভোজী (heterotrophic), এরা মৃত বা জীবন্ত জৈব পদার্থ থেকে পুষ্টি গ্রহণ করে। তবে লাইকেন নামক মিথোজীবী গঠনে শৈবাল ও ছত্রাক একত্রে বসবাস করে, যেখানে শৈবাল খাদ্য তৈরি করে এবং ছত্রাক সুরক্ষা ও আশ্রয় দেয়। ব্যাকটেরিয়া পুষ্টির দিক থেকে বিভিন্ন ধরনের হতে পারে (স্বভোজী, পরভোজী), ভাইরাস সম্পূর্ণরূপে পরজীবী এবং জীবন্ত কোষের অভ্যন্তরেই বংশবৃদ্ধি করতে পারে।",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                        <label class="option" data-option="${option}">
+                          <div class="circle">${option}</div>
+                          <span class="option-text">${question.options[option]}</span>
+                        </label>
+                      `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                           <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                           <div class="explanation-content">
+                             <div class="explanation-label">ব্যাখ্যা:</div>
+                             ${question.explanation}
+                           </div>
+                         </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                      <p class="question-label">${index + 1}. ${
+            question.question
+          }</p>
+                      <div class="options">
+                        ${optionsHTML}
+                      </div>
+                      ${explanationHTML}
+                    `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
